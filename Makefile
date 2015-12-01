@@ -1,6 +1,6 @@
 CPPFLAGS = -std=c++11 -ggdb -O0 -I/usr/local/include -fPIC
 LDFLAGS = -L. -L/usr/local/lib -lev
-SOURCES	= events.cc
+SOURCES	= events.cc tcpclient.cc
 OBJECTS	= $(foreach x, $(basename $(SOURCES)), $(x).o)
 
 TARGET = libevents.so
