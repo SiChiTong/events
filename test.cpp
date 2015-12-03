@@ -1,6 +1,6 @@
-#include "events.h"
-#include "tcpclient.h"
-#include "tcpserver.h"
+#include "events.hpp"
+#include "tcpclient.hpp"
+#include "tcpserver.hpp"
 
 int main() {
     try {

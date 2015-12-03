@@ -1,7 +1,7 @@
 #include <csignal>
 #include <cassert>
 
-#include "events.h"
+#include "events.hpp"
 
 events::events() {
     this->loop = ev_default_loop(EVBACKEND_POLL | EVBACKEND_SELECT);

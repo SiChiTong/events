@@ -1,6 +1,6 @@
 CPPFLAGS = -std=c++11 -ggdb -O0 -I/usr/local/include -fPIC
 LDFLAGS = -L. -L/usr/local/lib -lev
-SOURCES	= events.cc tcpclient.cc tcpserver.cc
+SOURCES	= events.cpp tcpclient.cpp tcpserver.cpp
 OBJECTS	= $(foreach x, $(basename $(SOURCES)), $(x).o)
 
 TARGET = libevents.so
@@ -11,13 +11,13 @@ link:
 	@echo [LD]
 	@$(CXX) -shared $(OBJECTS) -o $(TARGET) $(LDFLAGS)
 
-%.o: %.cc
+%.o: %.cpp
 	@echo [CC] $@
 	@$(CXX) $(CPPFLAGS) -o $@ -c $<
 
 test:
 	@echo [TEST]
-	@$(CXX) test.cc $(CPPFLAGS) $(LDFLAGS) -levents -o test
+	@$(CXX) test.cpp $(CPPFLAGS) $(LDFLAGS) -levents -o test
 
 clean:
 	@rm -f $(TARGET)
