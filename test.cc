@@ -1,10 +1,11 @@
 #include "events.h"
 #include "tcpclient.h"
+#include "tcpserver.h"
 
 int main() {
     try {
+        tcpserver server(5555);
         tcpclient client("localhost", 5555);
-        client.connect();
 
         events ev;
         ev.onSignal(SIGINT, 
@@ -12,16 +13,34 @@ int main() {
                         cout << "SIGINT received." << endl;
                         self->stop();
                     });
-        ev.onTimer(0, 2,
+        ev.onTimer(0, 5,
                    [](events* self) {
-                       cout << "Timer triggered." << endl;
+                       cout << "Timer triggered 5secs." << endl;
                    });
-        ev.onRead(client.fd(),
-                  [&client](events* self) {
-                      char buf[1];
-                      read(client.fd(), &buf, 1);
-                      cout << buf[0];
+
+        ev.onRead(server.fd(),
+                  [&server, &ev](events* self) {
+                      int childfd = server.accept();
+                      cout << "Client connected." << endl;
+                      ev.onTimer(0, 1,
+                                 [childfd](events* self) {
+                                     string msg = "Hello";
+                                     write(childfd, msg.data(), msg.length());
+                                 });
                   });
+
+        ev.onTimer(1, 0,
+                   [&client, &ev](events* self) {
+                       client.connect();
+                       ev.onRead(client.fd(),
+                                 [&client](events* self) {
+                                     char buf[100];
+                                     read(client.fd(), &buf, sizeof(buf));
+                                     cout << "Message received: " << buf << endl;
+                                     fflush(NULL);
+                                 });
+                   });
+
         ev.run();
        
     } catch(string& exception) {

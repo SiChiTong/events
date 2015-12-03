@@ -6,21 +6,23 @@ namespace net {
         #include <sys/socket.h>
         #include <netinet/in.h>
         #include <netdb.h>
+        #include <unistd.h>
+        #include <fcntl.h>
     }
 }
 #include <string>
 
-class tcpclient {
+class tcpserver {
 public:
-    tcpclient(const std::string& host, unsigned short port);
-    void connect();
+    tcpserver(unsigned short port);
+    ~tcpserver();
     int fd() { return this->sockfd; }
+    int accept();
 
 private:
-    std::string host;
     unsigned short port;
 
     int sockfd;
-    struct net::sockaddr_in servaddr;
+    struct net::sockaddr_in serveraddr;
     struct net::hostent *server;
 };

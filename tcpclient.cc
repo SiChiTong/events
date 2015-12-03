@@ -5,7 +5,7 @@
 using std::string;
 using namespace net;
 
-tcpclient::tcpclient(const string& host, unsigned int port) : host(host), port(port) {
+tcpclient::tcpclient(const string& host, unsigned short port) : host(host), port(port) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
         throw string("ERROR: opening socket");
