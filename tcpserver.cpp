@@ -27,8 +27,12 @@ tcpserver::tcpserver(unsigned short port) : port(port) {
         throw string("ERROR: listening");
 }
 
-tcpserver::~tcpserver() { 
+tcpserver::~tcpserver() {
+#ifdef __APPLE__
+    close(this->sockfd);
+#else
     net::close(this->sockfd);
+#endif
 }
 
 int tcpserver::accept() {
