@@ -9,31 +9,31 @@ int main() {
 
         events ev;
         ev.onSignal(SIGINT, 
-                    [](events* self) {
+                    [](event_signal_watcher* watcher) {
                         cout << "SIGINT received." << endl;
-                        self->stop();
+                        watcher->self->stop();
                     });
         ev.onTimer(0, 5,
-                   [](events* self) {
+                   [](event_timer_watcher* watcher) {
                        cout << "Timer triggered 5secs." << endl;
                    });
 
         ev.onRead(server.fd(),
-                  [&server, &ev](events* self) {
+                  [&server, &ev](event_io_watcher* watcher) {
                       int childfd = server.accept();
                       cout << "Client connected." << endl;
                       ev.onTimer(0, 1,
-                                 [childfd](events* self) {
+                                 [childfd](event_timer_watcher* watcher) {
                                      string msg = "Hello";
                                      write(childfd, msg.data(), msg.length());
                                  });
                   });
 
         ev.onTimer(1, 0,
-                   [&client, &ev](events* self) {
+                   [&client, &ev](event_timer_watcher* watcher) {
                        client.connect();
                        ev.onRead(client.fd(),
-                                 [&client](events* self) {
+                                 [&client](event_io_watcher* watcher) {
                                      char buf[100];
                                      read(client.fd(), &buf, sizeof(buf));
                                      cout << "Message received: " << buf << endl;

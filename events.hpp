@@ -12,24 +12,32 @@ extern "C" {
 
 using namespace std;
 
+class events; /* Forward declaration */
+
+template<class T>
+struct event_watcher {
+    function<void(event_watcher<T>*)> callback;
+    events* self;
+    T watcher;
+};
+using event_signal_watcher = event_watcher<ev_signal>;
+using event_timer_watcher = event_watcher<ev_timer>;
+using event_io_watcher = event_watcher<ev_io>;
+
 class events {
 public:
-    template<class T>
-    struct event_watcher {
-        function<void(events*)> callback;
-        events* self;
-        T watcher;
-    };
-    using event_signal_watcher = event_watcher<ev_signal>;
-    using event_timer_watcher = event_watcher<ev_timer>;
-    using event_io_watcher = event_watcher<ev_io>;
-
     events();
-    void onSignal(int signal, function<void(events*)> callback);
-    void onTimer(ev_tstamp after, ev_tstamp repeat, function<void(events*)> callback);
-    void onRead(int fd, function<void(events*)> callback);
+    shared_ptr<event_signal_watcher> onSignal(int signal,
+                                              function<void(event_signal_watcher*)> callback);
+    shared_ptr<event_timer_watcher> onTimer(ev_tstamp after,
+                                            ev_tstamp repeat,
+                                            function<void(event_timer_watcher*)> callback);
+    shared_ptr<event_io_watcher> onRead(int fd,
+                                        function<void(event_io_watcher*)> callback);
     void run();
     void stop();
+    void stopTimer(event_timer_watcher* watcher);
+    void stopTimer(shared_ptr<event_timer_watcher> watcher);
 
 private:
     static void signal_callback(struct ev_loop* loop, ev_signal* signal, int event);
@@ -40,7 +48,7 @@ private:
     static void callback(struct ev_loop* loop, EVENT_TYPE* event_handler, int event);
 
     template<class T>
-    shared_ptr<T> new_watcher(function<void(events*)> callback);
+    shared_ptr<T> new_watcher(function<void(T*)> callback);
 
     struct ev_loop *loop = NULL;    
     vector<shared_ptr<event_signal_watcher>> signal_watchers;
