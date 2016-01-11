@@ -12,12 +12,19 @@ namespace net {
 }
 #include <string>
 
+#define TELNET_CLRSCR "\u001B[2J"
+
 class tcpserver {
 public:
     tcpserver(unsigned short port);
     ~tcpserver();
     int fd() { return this->sockfd; }
     int accept();
+
+    size_t write( const std::string& msg);
+    size_t read(std::string& msg);
+    void close();
+    bool isValid();
 
 private:
     unsigned short port;

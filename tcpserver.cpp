@@ -6,6 +6,7 @@ using std::string;
 using namespace net;
 
 #define MAX_LISTENS 10
+#define MAX_MESSAGE_SIZE 1024
 
 tcpserver::tcpserver(unsigned short port) : port(port) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -47,4 +48,25 @@ int tcpserver::accept() {
     flags |= O_NONBLOCK;
     fcntl(childfd, F_SETFL, flags);
     return childfd;
+}
+
+size_t tcpserver::write(const std::string& msg) {
+    return net::write(sockfd, msg.c_str(), msg.length());
+}
+
+size_t tcpserver::read(std::string& msg) {
+    char raw_msg[MAX_MESSAGE_SIZE];
+    bzero(raw_msg, MAX_MESSAGE_SIZE);
+    size_t retval = net::read(sockfd, raw_msg, MAX_MESSAGE_SIZE);
+    if (retval)
+        msg = raw_msg;
+    return retval;
+}
+
+void tcpserver::close() {
+    net::close(sockfd);
+}
+
+bool tcpserver::isValid() {
+    return fcntl(sockfd, F_GETFD) != -1 || errno != EBADF;
 }
