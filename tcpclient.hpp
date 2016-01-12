@@ -20,10 +20,16 @@ public:
     void connect();
     int fd() { return this->sockfd; }
 
-    size_t write( const std::string& msg);
-    size_t read(std::string& msg);
+    ssize_t write( const std::string& msg);
+    ssize_t read(std::string& msg);
     void close();
     bool isValid();
+
+    class exception {
+    public:
+        exception(const std::string& msg) : msg(msg) { /* Left blank intentionally */ }
+        std::string msg;
+    };
 
 private:
     std::string host;

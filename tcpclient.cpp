@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 #include <cstring>
 #include "tcpclient.hpp"
@@ -10,11 +11,11 @@ using namespace net;
 tcpclient::tcpclient(const string& host, unsigned short port) : host(host), port(port) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
-        throw string("ERROR: opening socket");
+        throw exception("ERROR: opening socket");
 
     server = gethostbyname(host.c_str());
     if (server == NULL)
-        throw string("ERROR: no such host");
+        throw exception("ERROR: no such host");
 
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
@@ -24,7 +25,9 @@ tcpclient::tcpclient(const string& host, unsigned short port) : host(host), port
 
 void tcpclient::connect() {
     if (net::connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
-        throw string("ERROR: connecting to " + this->host);
+        throw exception("ERROR: connecting to " + this->host);
+    int flags = fcntl(sockfd, F_GETFL);
+    fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 }
 
 tcpclient::~tcpclient() {
@@ -35,16 +38,20 @@ tcpclient::~tcpclient() {
 #endif
 }
 
-size_t tcpclient::write(const std::string& msg) {
+ssize_t tcpclient::write(const std::string& msg) {
     return net::write(sockfd, msg.c_str(), msg.length());
 }
 
-size_t tcpclient::read(std::string& msg) {
+ssize_t tcpclient::read(std::string& msg) {
+    ssize_t retval = 0, bytes_read;
     char raw_msg[MAX_MESSAGE_SIZE];
     bzero(raw_msg, MAX_MESSAGE_SIZE);
-    size_t retval = net::read(sockfd, raw_msg, MAX_MESSAGE_SIZE);
-    if (retval)
-        msg = raw_msg;
+
+    msg.clear();
+    while((bytes_read = net::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0) {
+        retval += bytes_read;
+        msg += string(raw_msg, bytes_read);
+    }
     return retval;
 }
 

@@ -4,7 +4,7 @@
 #include "events.hpp"
 
 events::events() {
-    this->loop = ev_default_loop(EVBACKEND_POLL | EVBACKEND_SELECT);
+    this->loop = ev_loop_new(EVBACKEND_POLL | EVBACKEND_SELECT);
 }
 
 template<class T>
@@ -48,6 +48,14 @@ shared_ptr<event_io_watcher> events::onRead(int fd, function<void(event_io_watch
     return e_spec;
 }
 
+shared_ptr<event_async_watcher> events::onAsync(function<void(event_async_watcher*)> callback) {
+    auto e_spec = new_watcher<event_async_watcher>(callback);
+    ev_async_init(&e_spec->watcher, events::async_callback);
+    ev_async_start(this->loop, &e_spec->watcher);
+    async_watchers.push_back(e_spec);
+    return e_spec;
+}
+
 void events::run() {
     assert(this->loop);
     ev_run(this->loop, 0);
@@ -66,6 +74,10 @@ void events::stopTimer(shared_ptr<event_timer_watcher> watcher) {
     ev_timer_stop(watcher->self->loop, &watcher->watcher);
 }
 
+void events::sendAsync(shared_ptr<event_async_watcher> event) {
+    ev_async_send(this->loop, &event->watcher);
+}
+
 void events::signal_callback(struct ev_loop* loop, ev_signal* signal, int event) {
     auto e_spec = static_cast<event_signal_watcher*>(signal->data);
     auto callback = static_cast <function<void(event_signal_watcher*)>> (e_spec->callback);
@@ -81,5 +93,11 @@ void events::timer_callback(struct ev_loop* loop, ev_timer *timer, int event) {
 void events::io_callback(struct ev_loop* loop, ev_io *io, int event) {
     auto e_spec = static_cast<event_io_watcher*>(io->data);
     auto callback = static_cast <function<void(event_io_watcher*)>> (e_spec->callback);
+    callback(e_spec);
+}
+
+void events::async_callback(struct ev_loop* loop, ev_async *async, int event) {
+    auto e_spec = static_cast<event_async_watcher*>(async->data);
+    auto callback = static_cast <function<void(event_async_watcher*)>> (e_spec->callback);
     callback(e_spec);
 }
