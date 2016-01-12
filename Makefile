@@ -1,5 +1,5 @@
-CPPFLAGS = -std=c++11 -ggdb -O0 -I/usr/local/include -fPIC
-LDFLAGS = -L. -L/usr/local/lib -lev
+CPPFLAGS = -std=c++11 -ggdb -O0 -I/usr/local/include -fPIC -pthread
+LDFLAGS = -L. -L/usr/local/lib -lev -pthread
 SOURCES	= events.cpp tcpclient.cpp tcpserver.cpp
 OBJECTS	= $(foreach x, $(basename $(SOURCES)), $(x).o)
 

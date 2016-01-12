@@ -8,14 +8,18 @@ int main() {
         tcpclient client("localhost", 5555);
 
         events ev;
+        auto event = ev.onAsync([](event_async_watcher* watcher) {
+                cout << "ASYNC received." << endl;
+            });
         ev.onSignal(SIGINT, 
                     [](event_signal_watcher* watcher) {
                         cout << "SIGINT received." << endl;
                         watcher->self->stop();
                     });
         ev.onTimer(0, 5,
-                   [](event_timer_watcher* watcher) {
+                   [&ev, event](event_timer_watcher* watcher) {
                        cout << "Timer triggered 5secs." << endl;
+                       ev.sendAsync(event);
                    });
 
         ev.onRead(server.fd(),
