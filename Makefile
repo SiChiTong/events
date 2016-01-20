@@ -1,5 +1,10 @@
+ifeq ($(ASYNC_REDIS), 1)
+CPPFLAGS = -I$(HIREDIS_PATH) -std=c++11 -ggdb -O0 -I/usr/local/include -fPIC -pthread -DASYNC_REDIS
+LDFLAGS = -L$(HIREDIS_PATH) $(HIREDIS_PATH)/libhiredis.a -L. -L/usr/local/lib -lev -pthread
+else
 CPPFLAGS = -std=c++11 -ggdb -O0 -I/usr/local/include -fPIC -pthread
 LDFLAGS = -L. -L/usr/local/lib -lev -pthread
+endif
 SOURCES	= events.cpp tcpclient.cpp tcpserver.cpp
 OBJECTS	= $(foreach x, $(basename $(SOURCES)), $(x).o)
 

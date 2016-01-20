@@ -4,7 +4,10 @@
 #include <functional>
 #include <vector>
 #include <memory>
-
+#ifdef ASYNC_REDIS
+#include <async.h>
+#include <hiredis.h>
+#endif
 extern "C" {
 #include <unistd.h>
 #include <ev.h>
@@ -13,6 +16,10 @@ extern "C" {
 using namespace std;
 
 class events; /* Forward declaration */
+
+#ifdef ASYNC_REDIS
+typedef void (*event_redis_callback)(redisAsyncContext*, void*, void*);
+#endif
 
 template<class T>
 struct event_watcher {
@@ -37,6 +44,11 @@ public:
                                         function<void(event_io_watcher*)> callback);
     shared_ptr<event_async_watcher> onAsync(function<void(event_async_watcher*)> callback);
 
+#ifdef ASYNC_REDIS
+    events(const string& redis_host, unsigned short redis_port);
+    void onListPop(const string& key, function<void(const string& value)> callback);
+#endif
+
     void run();
     void stop();
     void stopTimer(event_timer_watcher* watcher);
@@ -60,4 +72,8 @@ private:
     vector<shared_ptr<event_timer_watcher>> timer_watchers;
     vector<shared_ptr<event_io_watcher>> io_watchers;
     vector<shared_ptr<event_async_watcher>> async_watchers;
+
+#ifdef ASYNC_REDIS
+    redisAsyncContext* redis;
+#endif
 };

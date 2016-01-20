@@ -1,7 +1,14 @@
 #include <csignal>
 #include <cassert>
-
 #include "events.hpp"
+
+#ifdef ASYNC_REDIS
+extern "C" {
+    #include <hiredis.h>
+    #include <async.h>
+    #include <adapters/libev.h>
+}
+#endif
 
 events::events() {
     this->loop = ev_loop_new(EVBACKEND_POLL | EVBACKEND_SELECT);
@@ -15,13 +22,6 @@ shared_ptr<T> events::new_watcher(function<void(T*)> callback) {
     e_spec->watcher.data = e_spec.get();
     
     return e_spec;
-}
-
-template<class EVENT_TYPE, class EVENT_WATCHER>
-void events::callback(struct ev_loop* loop, EVENT_TYPE* event_handler, int event) {
-    auto e_spec = static_cast<EVENT_WATCHER*>(event_handler->data);
-    auto _callback = static_cast<function<void(events*)>>(e_spec->callback);
-    _callback(e_spec->self);
 }
 
 shared_ptr<event_signal_watcher> events::onSignal(int signal, function<void(event_signal_watcher*)> callback) {
@@ -101,3 +101,27 @@ void events::async_callback(struct ev_loop* loop, ev_async *async, int event) {
     auto callback = static_cast <function<void(event_async_watcher*)>> (e_spec->callback);
     callback(e_spec);
 }
+
+#ifdef ASYNC_REDIS
+events::events(const string& redis_host, unsigned short redis_port) {
+    this->redis = redisAsyncConnect(redis_host.c_str(), redis_port);
+    if (this->redis->err) {
+        throw string("Redis Async cannot connect.");
+    }
+    this->loop = ev_loop_new(EVBACKEND_POLL | EVBACKEND_SELECT);
+    redisLibevAttach(this->loop, this->redis);
+}
+
+static void redis_read_callback(redisAsyncContext *context, void *reply, void *data) {
+    auto callback = *static_cast<function<void(const string& value)>*>(data);
+    auto _reply = static_cast<redisReply*>(reply);
+    callback(_reply->element[1]->str);
+    string cmd = "BLPOP " + string(_reply->element[0]->str) + " 0";
+    redisAsyncCommand(context, redis_read_callback, data, cmd.c_str());
+}
+
+void events::onListPop(const string& key, function<void(const string& value)> callback) {
+    string cmd = "BLPOP " + key + " 0";
+    redisAsyncCommand(this->redis, redis_read_callback, &callback, cmd.c_str());
+}
+#endif
