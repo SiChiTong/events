@@ -105,11 +105,13 @@ void events::async_callback(struct ev_loop* loop, ev_async *async, int event) {
 #ifdef ASYNC_REDIS
 events::events(const string& redis_host, unsigned short redis_port) {
     this->redis = redisAsyncConnect(redis_host.c_str(), redis_port);
-    if (this->redis->err) {
+    this->redis_pubsub = redisAsyncConnect(redis_host.c_str(), redis_port);
+    if (this->redis->err || this->redis_pubsub->err) {
         throw string("Redis Async cannot connect.");
     }
     this->loop = ev_loop_new(EVBACKEND_POLL | EVBACKEND_SELECT);
     redisLibevAttach(this->loop, this->redis);
+    redisLibevAttach(this->loop, this->redis_pubsub);
 }
 
 static void redis_read_callback(redisAsyncContext *context, void *reply, void *data) {
@@ -120,8 +122,22 @@ static void redis_read_callback(redisAsyncContext *context, void *reply, void *d
     redisAsyncCommand(context, redis_read_callback, data, cmd.c_str());
 }
 
+static void redis_subscribe_callback(redisAsyncContext *context, void *reply, void *data) {
+    auto callback = *static_cast<function<void(const string& value)>*>(data);
+    auto _reply = static_cast<redisReply*>(reply);
+    if (string(_reply->element[0]->str) == "message") {
+        callback(_reply->element[2]->str);
+    }
+}
+
 void events::onListPop(const string& key, function<void(const string& value)> callback) {
     string cmd = "BLPOP " + key + " 0";
     redisAsyncCommand(this->redis, redis_read_callback, &callback, cmd.c_str());
 }
+
+void events::onSubscribe(const string& key, function<void(const string& value)> callback) {
+    string cmd = "SUBSCRIBE " + key;
+    redisAsyncCommand(this->redis_pubsub, redis_subscribe_callback, &callback, cmd.c_str());
+}
+
 #endif
