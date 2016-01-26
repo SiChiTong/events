@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 #include <cstring>
 #include "tcpserver.hpp"
@@ -30,7 +31,7 @@ tcpserver::tcpserver(unsigned short port) : port(port) {
 
 tcpserver::~tcpserver() {
 #ifdef __APPLE__
-    close(this->sockfd);
+    ::close(this->sockfd);
 #else
     net::close(this->sockfd);
 #endif
@@ -50,7 +51,11 @@ int tcpserver::accept() {
 }
 
 ssize_t tcpserver::write(const std::string& msg) {
+#ifdef __APPLE__
+    return ::write(sockfd, msg.c_str(), msg.length());
+#else
     return net::write(sockfd, msg.c_str(), msg.length());
+#endif
 }
 
 ssize_t tcpserver::read(std::string& msg) {
@@ -59,7 +64,13 @@ ssize_t tcpserver::read(std::string& msg) {
     bzero(raw_msg, MAX_MESSAGE_SIZE);
 
     msg.clear();
-    while((bytes_read = net::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0) {
+    while((bytes_read =
+#ifdef __APPLE__
+           ::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
+#else
+          net::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
+#endif
+        ) {
         retval += bytes_read;
         msg += string(raw_msg, bytes_read);
     }
@@ -67,7 +78,11 @@ ssize_t tcpserver::read(std::string& msg) {
 }
 
 void tcpserver::close() {
+#ifdef __APPLE__
+    ::close(sockfd);
+#else
     net::close(sockfd);
+#endif
 }
 
 bool tcpserver::isValid() {

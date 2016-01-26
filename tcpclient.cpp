@@ -32,14 +32,18 @@ void tcpclient::connect() {
 
 tcpclient::~tcpclient() {
 #ifdef __APPLE__
-    close(this->sockfd);
+    ::close(this->sockfd);
 #else
     net::close(this->sockfd);
 #endif
 }
 
 ssize_t tcpclient::write(const std::string& msg) {
+#ifdef __APPLE__
+    return ::write(sockfd, msg.c_str(), msg.length());
+#else
     return net::write(sockfd, msg.c_str(), msg.length());
+#endif
 }
 
 ssize_t tcpclient::read(std::string& msg) {
@@ -48,7 +52,13 @@ ssize_t tcpclient::read(std::string& msg) {
     bzero(raw_msg, MAX_MESSAGE_SIZE);
 
     msg.clear();
-    while((bytes_read = net::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0) {
+    while((bytes_read =
+#ifdef __APPLE__
+           ::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
+#else
+           net::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
+#endif
+        ) {
         retval += bytes_read;
         msg += string(raw_msg, bytes_read);
     }
@@ -56,7 +66,11 @@ ssize_t tcpclient::read(std::string& msg) {
 }
 
 void tcpclient::close() {
+#ifdef __APPLE__
+    ::close(sockfd);
+#else
     net::close(sockfd);
+#endif
 }
 
 bool tcpclient::isValid() {
