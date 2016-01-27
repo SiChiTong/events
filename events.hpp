@@ -27,10 +27,16 @@ struct event_watcher {
     events* self;
     T watcher;
 };
+
 using event_signal_watcher = event_watcher<ev_signal>;
 using event_timer_watcher = event_watcher<ev_timer>;
 using event_io_watcher = event_watcher<ev_io>;
 using event_async_watcher = event_watcher<ev_async>;
+#ifdef ASYNC_REDIS
+struct event_redis_watcher {
+    function<void(const string& value)> callback;
+};
+#endif
 
 class events {
 public:
@@ -46,8 +52,8 @@ public:
 
 #ifdef ASYNC_REDIS
     events(const string& redis_host, unsigned short redis_port);
-    void onListPop(const string& key, function<void(const string& value)> callback);
-    void onSubscribe(const string& key, function<void(const string& value)> callback);
+    shared_ptr<event_redis_watcher> onListPop(const string& key, function<void(const string& value)> callback);
+    shared_ptr<event_redis_watcher> onSubscribe(const string& key, function<void(const string& value)> callback);
 #endif
 
     void run();
@@ -62,6 +68,10 @@ private:
     static void io_callback(struct ev_loop* loop,ev_io* io, int event);
     static void async_callback(struct ev_loop* loop, ev_async* async, int event);
 
+#ifdef ASYNC_REDIS
+    static void redis_read_callback(redisAsyncContext *context, void *reply, void *data);
+    static void redis_subscribe_callback(redisAsyncContext *context, void *reply, void *data);
+#endif
     template<class EVENT_TYPE, class EVENT_WATCHER>
     static void callback(struct ev_loop* loop, EVENT_TYPE* event_handler, int event);
 
@@ -75,6 +85,8 @@ private:
     vector<shared_ptr<event_async_watcher>> async_watchers;
 
 #ifdef ASYNC_REDIS
+    vector<shared_ptr<event_redis_watcher>> redis_watchers;
+    
     redisAsyncContext *redis, *redis_pubsub;
 #endif
 };

@@ -4,19 +4,21 @@
 
 int main() {
     try {
+        string a = "Queue A";
+        string b = "Queue B";
         events ev("localhost", 6379);
         ev.onSubscribe("a",
-                       [](const string& value) {
-                           cout << "A: " << value << endl;
+                       [&a](const string& value) {
+                           cout << a << " : " << value << endl;
                        });
-        ev.onSubscribe("b",
-                       [](const string& value) {
-                           cout << "B: " << value << endl;
-                       });
-        ev.onListPop("c",
-                     [](const string& value) {
-                         cout << value << endl;
+        ev.onListPop("b",
+                     [&b](const string& value) {
+                         cout << b << " : " << value << endl;
                      });
+        ev.onTimer(1, 1,
+                   [](event_timer_watcher*) {
+                       cout << "Dance in the rain" << endl;
+                   });
         ev.run();
        
     } catch(string& exception) {

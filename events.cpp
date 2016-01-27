@@ -114,30 +114,39 @@ events::events(const string& redis_host, unsigned short redis_port) {
     redisLibevAttach(this->loop, this->redis_pubsub);
 }
 
-static void redis_read_callback(redisAsyncContext *context, void *reply, void *data) {
-    auto callback = *static_cast<function<void(const string& value)>*>(data);
+void events::redis_read_callback(redisAsyncContext *context, void *reply, void *data) {
     auto _reply = static_cast<redisReply*>(reply);
+    auto callback = *static_cast<function<void(const string& value)>*>(data);
     callback(_reply->element[1]->str);
-    string cmd = "BLPOP " + string(_reply->element[0]->str) + " 0";
-    redisAsyncCommand(context, redis_read_callback, data, cmd.c_str());
+
+    redisAsyncCommand(context, redis_read_callback, data, "BLPOP %s 0 ", _reply->element[0]->str);
 }
 
-static void redis_subscribe_callback(redisAsyncContext *context, void *reply, void *data) {
-    auto callback = *static_cast<function<void(const string& value)>*>(data);
+void events::redis_subscribe_callback(redisAsyncContext *context, void *reply, void *data) {
     auto _reply = static_cast<redisReply*>(reply);
+
     if (string(_reply->element[0]->str) == "message") {
+        auto callback = *static_cast<function<void(const string& value)>*>(data);
         callback(_reply->element[2]->str);
     }
 }
 
-void events::onListPop(const string& key, function<void(const string& value)> callback) {
-    string cmd = "BLPOP " + key + " 0";
-    redisAsyncCommand(this->redis, redis_read_callback, &callback, cmd.c_str());
+shared_ptr<event_redis_watcher> events::onListPop(const string& key, function<void(const string& value)> callback) {
+    auto e_spec = make_shared<event_redis_watcher>();
+    e_spec->callback = callback;
+    redis_watchers.push_back(e_spec);
+
+    redisAsyncCommand(this->redis, redis_read_callback, &e_spec->callback, "BLPOP %s 0", key.c_str());
+    return e_spec;
 }
 
-void events::onSubscribe(const string& key, function<void(const string& value)> callback) {
-    string cmd = "SUBSCRIBE " + key;
-    redisAsyncCommand(this->redis_pubsub, redis_subscribe_callback, &callback, cmd.c_str());
+shared_ptr<event_redis_watcher> events::onSubscribe(const string& key, function<void(const string& value)> callback) {
+    auto e_spec = make_shared<event_redis_watcher>();
+    e_spec->callback = callback;
+    redis_watchers.push_back(e_spec);
+
+    redisAsyncCommand(this->redis_pubsub, redis_subscribe_callback, &e_spec->callback, "SUBSCRIBE %s", key.c_str());
+    return e_spec;
 }
 
 #endif
