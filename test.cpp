@@ -8,11 +8,12 @@ int main() {
         string b = "Queue B";
         events ev("localhost", 6379);
         ev.onSubscribe("a",
-                       [&a](const string& value) {
+                       [&a](redisAsyncContext* context, const string& value) {
                            cout << a << " : " << value << endl;
                        });
         ev.onListPop("b",
-                     [&b](const string& value) {
+                     [&b](redisAsyncContext* context, const string& value) {
+                         redisAsyncCommand(context, NULL, NULL, "publish a movida");
                          cout << b << " : " << value << endl;
                      });
         ev.onTimer(1, 1,

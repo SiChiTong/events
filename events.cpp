@@ -128,8 +128,8 @@ events::events(const string& redis_host, unsigned short redis_port) {
 
 void events::redis_read_callback(redisAsyncContext *context, void *reply, void *data) {
     auto _reply = static_cast<redisReply*>(reply);
-    auto callback = *static_cast<function<void(const string& value)>*>(data);
-    callback(_reply->element[1]->str);
+    auto callback = *static_cast<function<void(redisAsyncContext*, const string& value)>*>(data);
+    callback(context, _reply->element[1]->str);
 
     redisAsyncCommand(context, redis_read_callback, data, "BLPOP %s 0 ", _reply->element[0]->str);
 }
@@ -138,12 +138,14 @@ void events::redis_subscribe_callback(redisAsyncContext *context, void *reply, v
     auto _reply = static_cast<redisReply*>(reply);
 
     if (string(_reply->element[0]->str) == "message") {
-        auto callback = *static_cast<function<void(const string& value)>*>(data);
-        callback(_reply->element[2]->str);
+        auto callback = *static_cast<function<void(redisAsyncContext*, const string& value)>*>(data);
+        callback(context, _reply->element[2]->str);
     }
 }
 
-shared_ptr<event_redis_watcher> events::onListPop(const string& key, function<void(const string& value)> callback) {
+shared_ptr<event_redis_watcher> events::onListPop(const string& key, 
+                                                  function<void(redisAsyncContext*,
+                                                                const string& value)> callback) {
     auto e_spec = make_shared<event_redis_watcher>();
     e_spec->callback = callback;
     redis_watchers.push_back(e_spec);
@@ -152,7 +154,9 @@ shared_ptr<event_redis_watcher> events::onListPop(const string& key, function<vo
     return e_spec;
 }
 
-shared_ptr<event_redis_watcher> events::onSubscribe(const string& key, function<void(const string& value)> callback) {
+shared_ptr<event_redis_watcher> events::onSubscribe(const string& key, 
+                                                    function<void(redisAsyncContext*,
+                                                                  const string& value)> callback) {
     auto e_spec = make_shared<event_redis_watcher>();
     e_spec->callback = callback;
     redis_watchers.push_back(e_spec);

@@ -35,7 +35,7 @@ using event_io_watcher = event_watcher<ev_io>;
 using event_async_watcher = event_watcher<ev_async>;
 #ifdef ASYNC_REDIS
 struct event_redis_watcher {
-    function<void(const string& value)> callback;
+    function<void(redisAsyncContext*, const string& value)> callback;
 };
 #endif
 
@@ -53,8 +53,12 @@ public:
 
 #ifdef ASYNC_REDIS
     events(const string& redis_host, unsigned short redis_port);
-    shared_ptr<event_redis_watcher> onListPop(const string& key, function<void(const string& value)> callback);
-    shared_ptr<event_redis_watcher> onSubscribe(const string& key, function<void(const string& value)> callback);
+    shared_ptr<event_redis_watcher> onListPop(const string& key, 
+                                              function<void(redisAsyncContext*, 
+                                                            const string& value)> callback);
+    shared_ptr<event_redis_watcher> onSubscribe(const string& key, 
+                                                function<void(redisAsyncContext*,
+                                                              const string& value)> callback);
 #endif
 
     void run();
