@@ -66,12 +66,24 @@ void events::stop() {
     ev_break(this->loop, EVBREAK_ALL);
 }
 
-void events::stopTimer(event_timer_watcher* watcher) {
-    ev_timer_stop(watcher->self->loop, &watcher->watcher);
+template<> void event_watcher<ev_signal>::stop() {
+    /* TODO event shall be removed from signal_watchers */
+    ev_signal_stop(this->self->loop, &this->watcher);
 }
 
-void events::stopTimer(shared_ptr<event_timer_watcher> watcher) {
-    ev_timer_stop(watcher->self->loop, &watcher->watcher);
+template<> void event_watcher<ev_timer>::stop() {
+    /* TODO event shall be removed from timer_watchers */
+    ev_timer_stop(this->self->loop, &this->watcher);
+}
+
+template<> void event_watcher<ev_io>::stop() {
+    /* TODO event shall be removed from io_watchers */
+    ev_io_stop(this->self->loop, &this->watcher);
+}
+
+template<> void event_watcher<ev_async>::stop() {
+    /* TODO event shall be removed from async_watchers */
+    ev_async_stop(this->self->loop, &this->watcher);
 }
 
 void events::sendAsync(shared_ptr<event_async_watcher> event) {

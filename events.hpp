@@ -26,6 +26,7 @@ struct event_watcher {
     function<void(event_watcher<T>*)> callback;
     events* self;
     T watcher;
+    void stop();
 };
 
 using event_signal_watcher = event_watcher<ev_signal>;
@@ -58,11 +59,14 @@ public:
 
     void run();
     void stop();
-    void stopTimer(event_timer_watcher* watcher);
-    void stopTimer(shared_ptr<event_timer_watcher> watcher);
     void sendAsync(shared_ptr<event_async_watcher> watcher);
 
 private:
+    friend event_signal_watcher;
+    friend event_timer_watcher;
+    friend event_io_watcher;
+    friend event_async_watcher;
+
     static void signal_callback(struct ev_loop* loop, ev_signal* signal, int event);
     static void timer_callback(struct ev_loop* loop, ev_timer* timer, int event);
     static void io_callback(struct ev_loop* loop,ev_io* io, int event);
