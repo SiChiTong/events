@@ -8,12 +8,12 @@ int main() {
         ev.onSubscribe("A",
                        [](redisAsyncContext* context, const string& value) {
                            cout << "A: " << value << endl;
-                           redisAsyncCommand(context, NULL, NULL, "RPUSH REP:A test1");
+                           redisAsyncCommand(context, NULL, NULL, "RPUSH REP:A %s", value.c_str());
                        });
         ev.onSubscribe("B",
                        [](redisAsyncContext* context, const string& value) {
                            cout << "B: " << value << endl;
-                           redisAsyncCommand(context, NULL, NULL, "RPUSH REP:B test2");
+                           redisAsyncCommand(context, NULL, NULL, "RPUSH REP:B %s", value.c_str());
                        });
         ev.run();
        

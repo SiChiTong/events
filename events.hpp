@@ -54,12 +54,9 @@ public:
 
 #ifdef ASYNC_REDIS
     events(const string& redis_host, unsigned short redis_port);
-    shared_ptr<event_redis_watcher> onListPop(const string& key, 
-                                              function<void(redisAsyncContext*, 
-                                                            const string& value)> callback);
-    shared_ptr<event_redis_watcher> onSubscribe(const string& key, 
-                                                function<void(redisAsyncContext*,
-                                                              const string& value)> callback);
+    void onSubscribe(const string& key, 
+                     function<void(redisAsyncContext*,
+                                   const string& value)> callback);
 #endif
 
     void run();
@@ -94,8 +91,7 @@ private:
     vector<shared_ptr<event_async_watcher>> async_watchers;
 
 #ifdef ASYNC_REDIS
-    vector<shared_ptr<event_redis_watcher>> redis_watchers;
-    
+    vector<event_redis_watcher*> redis_watchers;    
     redisAsyncContext *redis, *redis_pubsub;
 #endif
 };
