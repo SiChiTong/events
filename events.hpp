@@ -35,6 +35,7 @@ using event_io_watcher = event_watcher<ev_io>;
 using event_async_watcher = event_watcher<ev_async>;
 #ifdef ASYNC_REDIS
 struct event_redis_watcher {
+    redisAsyncContext* context;
     function<void(redisAsyncContext*, const string& value)> callback;
 };
 #endif

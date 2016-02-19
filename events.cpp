@@ -138,8 +138,8 @@ void events::redis_subscribe_callback(redisAsyncContext *context, void *reply, v
     auto _reply = static_cast<redisReply*>(reply);
 
     if (string(_reply->element[0]->str) == "message") {
-        auto callback = *static_cast<function<void(redisAsyncContext*, const string& value)>*>(data);
-        callback(context, _reply->element[2]->str);
+        auto e_spec = *static_cast<shared_ptr<event_redis_watcher>*>(data);
+        e_spec->callback(e_spec->context, _reply->element[2]->str);
     }
 }
 
@@ -147,6 +147,7 @@ shared_ptr<event_redis_watcher> events::onListPop(const string& key,
                                                   function<void(redisAsyncContext*,
                                                                 const string& value)> callback) {
     auto e_spec = make_shared<event_redis_watcher>();
+    e_spec->context = NULL;
     e_spec->callback = callback;
     redis_watchers.push_back(e_spec);
 
@@ -158,10 +159,11 @@ shared_ptr<event_redis_watcher> events::onSubscribe(const string& key,
                                                     function<void(redisAsyncContext*,
                                                                   const string& value)> callback) {
     auto e_spec = make_shared<event_redis_watcher>();
+    e_spec->context = this->redis;
     e_spec->callback = callback;
     redis_watchers.push_back(e_spec);
 
-    redisAsyncCommand(this->redis_pubsub, redis_subscribe_callback, &e_spec->callback, "SUBSCRIBE %s", key.c_str());
+    redisAsyncCommand(this->redis_pubsub, redis_subscribe_callback, &e_spec, "SUBSCRIBE %s", key.c_str());
     return e_spec;
 }
 

@@ -4,22 +4,17 @@
 
 int main() {
     try {
-        string a = "Queue A";
-        string b = "Queue B";
         events ev("localhost", 6379);
-        ev.onSubscribe("a",
-                       [&a](redisAsyncContext* context, const string& value) {
-                           cout << a << " : " << value << endl;
+        ev.onSubscribe("A",
+                       [](redisAsyncContext* context, const string& value) {
+                           cout << "A: " << value << endl;
+                           redisAsyncCommand(context, NULL, NULL, "RPUSH REP:A test1");
                        });
-        ev.onListPop("b",
-                     [&b](redisAsyncContext* context, const string& value) {
-                         redisAsyncCommand(context, NULL, NULL, "publish a movida");
-                         cout << b << " : " << value << endl;
-                     });
-        ev.onTimer(1, 1,
-                   [](event_timer_watcher*) {
-                       cout << "Dance in the rain" << endl;
-                   });
+        ev.onSubscribe("B",
+                       [](redisAsyncContext* context, const string& value) {
+                           cout << "B: " << value << endl;
+                           redisAsyncCommand(context, NULL, NULL, "RPUSH REP:B test2");
+                       });
         ev.run();
        
     } catch(string& exception) {
