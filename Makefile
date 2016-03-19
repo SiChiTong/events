@@ -20,7 +20,7 @@ link:
 	@echo [CC] $@
 	@$(CXX) $(CPPFLAGS) -o $@ -c $<
 
-test:
+test: test.cpp
 	@echo [TEST]
 	@$(CXX) test.cpp $(CPPFLAGS) $(LDFLAGS) -levents -o test
 
