@@ -9,7 +9,10 @@ using namespace net;
 #define MAX_LISTENS 10
 #define MAX_MESSAGE_SIZE 1024
 
-tcpserver::tcpserver(unsigned short port) : port(port) {
+tcpserver::tcpserver(const std::string& host,
+                     unsigned short port)
+    : host(host),
+      port(port) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
         throw exception("ERROR: opening socket");
@@ -19,7 +22,7 @@ tcpserver::tcpserver(unsigned short port) : port(port) {
 
     bzero((char *) &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serveraddr.sin_addr.s_addr = inet_addr(host.c_str());
     serveraddr.sin_port = htons((unsigned short)port);
 
     if (bind(sockfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0)

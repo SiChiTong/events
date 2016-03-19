@@ -5,6 +5,7 @@ namespace net {
         #include <sys/types.h>
         #include <sys/socket.h>
         #include <netinet/in.h>
+        #include <arpa/inet.h>
         #include <netdb.h>
         #include <unistd.h>
         #include <fcntl.h>
@@ -16,7 +17,8 @@ namespace net {
 
 class tcpserver {
 public:
-    tcpserver(unsigned short port);
+    tcpserver(const std::string& host,
+              unsigned short port);
     ~tcpserver();
     int fd() { return this->sockfd; }
     int accept();
@@ -28,11 +30,14 @@ public:
 
     class exception {
     public:
-        exception(const std::string& msg) : msg(msg) { /* Left blank intentionally */ }
+        exception(const std::string& msg)
+            : msg(msg)
+            { /* Left blank intentionally */ }
         std::string msg;
     };
 
 private:
+    const std::string host;
     unsigned short port;
 
     int sockfd;
