@@ -53,15 +53,15 @@ int tcpserver::accept() {
     return childfd;
 }
 
-ssize_t tcpserver::write(const std::string& msg) {
+ssize_t tcpserver::write(int childfd, const std::string& msg) {
 #ifdef __APPLE__
-    return ::write(sockfd, msg.c_str(), msg.length());
+    return ::write(childfd, msg.c_str(), msg.length());
 #else
-    return net::write(sockfd, msg.c_str(), msg.length());
+    return net::write(childfd, msg.c_str(), msg.length());
 #endif
 }
 
-ssize_t tcpserver::read(std::string& msg) {
+ssize_t tcpserver::read(int childfd, std::string& msg) {
     ssize_t retval = 0, bytes_read;
     char raw_msg[MAX_MESSAGE_SIZE];
     bzero(raw_msg, MAX_MESSAGE_SIZE);
@@ -69,9 +69,9 @@ ssize_t tcpserver::read(std::string& msg) {
     msg.clear();
     while((bytes_read =
 #ifdef __APPLE__
-           ::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
+           ::read(childfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
 #else
-          net::read(sockfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
+          net::read(childfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
 #endif
         ) {
         retval += bytes_read;

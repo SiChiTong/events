@@ -23,8 +23,8 @@ public:
     int fd() { return this->sockfd; }
     int accept();
 
-    ssize_t write( const std::string& msg);
-    ssize_t read(std::string& msg);
+    ssize_t write(int childfd, const std::string& msg);
+    ssize_t read(int childfd, std::string& msg);
     void close();
     bool isValid();
 

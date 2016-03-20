@@ -20,7 +20,7 @@ public:
     void connect();
     int fd() { return this->sockfd; }
 
-    ssize_t write( const std::string& msg);
+    ssize_t write(const std::string& msg);
     ssize_t read(std::string& msg);
     void close();
     bool isValid();
