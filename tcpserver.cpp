@@ -91,3 +91,7 @@ void tcpserver::close() {
 bool tcpserver::isValid() {
     return fcntl(sockfd, F_GETFD) != -1 || errno != EBADF;
 }
+
+bool tcpserver::isValid(int childfd) {
+    return fcntl(childfd, F_GETFD) != -1 || errno != EBADF;
+}

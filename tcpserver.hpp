@@ -27,6 +27,7 @@ public:
     ssize_t read(int childfd, std::string& msg);
     void close();
     bool isValid();
+    bool isValid(int childfd);
 
     class exception {
     public:
