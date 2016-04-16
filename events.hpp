@@ -57,6 +57,7 @@ public:
     void onSubscribe(const string& key, 
                      function<void(redisAsyncContext*,
                                    const string& value)> callback);
+    void unsubscribe(const string& key);
 #endif
 
     void run();

@@ -154,4 +154,8 @@ void events::onSubscribe(const string& key,
     redisAsyncCommand(this->redis_pubsub, redis_subscribe_callback, (void*) redis_watchers.back(), "SUBSCRIBE %s", key.c_str());
 }
 
+void events::unsubscribe(const string& key) {
+    redisAsyncCommand(this->redis_pubsub, NULL, NULL, "UNSUBSCRIBE %s", key.c_str());
+}
+
 #endif
