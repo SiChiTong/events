@@ -58,6 +58,12 @@ public:
                      function<void(redisAsyncContext*,
                                    const string& value)> callback);
     void unsubscribe(const string& key);
+    redisAsyncContext* getAsyncContext() {
+        return this->redis;
+    }
+    redisAsyncContext* getPubSubAsyncContext() {
+        return this->redis_pubsub;
+    }
 #endif
 
     void run();
