@@ -26,7 +26,7 @@ shared_ptr<T> events::new_watcher(function<void(T*)> callback) {
 
 shared_ptr<event_signal_watcher> events::onSignal(int signal, function<void(event_signal_watcher*)> callback) {
     auto e_spec = new_watcher<event_signal_watcher>(callback);
-    ev_signal_init(&e_spec->watcher, events::signal_callback, SIGINT);
+    ev_signal_init(&e_spec->watcher, events::signal_callback, signal);
     ev_signal_start(this->loop, &e_spec->watcher);
     signal_watchers.push_back(e_spec);
     return e_spec;
