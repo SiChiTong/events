@@ -54,6 +54,10 @@ public:
 
 #ifdef ASYNC_REDIS
     events(const string& redis_host, unsigned short redis_port);
+    void onPop(const string& key,
+               function<void(redisAsyncContext*,
+                             const string& value)> callback,
+               int timeout = 0);
     void onSubscribe(const string& key, 
                      function<void(redisAsyncContext*,
                                    const string& value)> callback);

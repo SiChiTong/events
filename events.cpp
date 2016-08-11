@@ -154,6 +154,18 @@ void events::onSubscribe(const string& key,
     redisAsyncCommand(this->redis_pubsub, redis_subscribe_callback, (void*) redis_watchers.back(), "SUBSCRIBE %s", key.c_str());
 }
 
+void events::onPop(const string& key,
+                   function<void(redisAsyncContext*,
+                                 const string& value)> callback,
+                   int timeout) {
+    auto e_spec = new event_redis_watcher;
+    e_spec->context = this->redis;
+    e_spec->callback = callback;
+    redis_watchers.push_back(e_spec);
+    
+    redisAsyncCommand(this->redis, redis_read_callback, (void*) redis_watchers.back(), "BLPOP %s %d", key.c_str(), timeout);
+};
+
 void events::unsubscribe(const string& key) {
     redisAsyncCommand(this->redis_pubsub, NULL, NULL, "UNSUBSCRIBE %s", key.c_str());
 }

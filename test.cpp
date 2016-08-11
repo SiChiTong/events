@@ -4,7 +4,7 @@
 
 int main() {
     try {
-        #ifdef ASYNC_REDIS
+#ifdef ASYNC_REDIS
         events ev("localhost", 6379);
         ev.onSubscribe("A",
                        [](redisAsyncContext* context, const string& value) {
@@ -16,7 +16,11 @@ int main() {
                            cout << "B: " << value << endl;
                            redisAsyncCommand(context, NULL, NULL, "RPUSH REP:B %s", value.c_str());
                        });
-        #else
+        ev.onPop("Tasks",
+                 [](redisAsyncContext*, const string& value) {
+                     cout << "Tasks: " << value << endl;
+                 });
+#else
         tcpserver server("127.0.0.1", 12345);
         events ev;
         ev.onRead(server.fd(),
@@ -24,7 +28,7 @@ int main() {
                       server.accept();
                       cout << "Client connected." << endl;
                   });
-        #endif
+#endif
         ev.run();
        
     } catch(string& exception) {

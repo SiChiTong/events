@@ -1,6 +1,8 @@
 OS := $(shell uname)
 ifeq ($(OS),Linux)
+ifndef HIREDIS_PATH
 HIREDIS_PATH = /usr/include/hiredis/
+endif
 endif
 
 ifeq ($(ASYNC_REDIS), 1)
