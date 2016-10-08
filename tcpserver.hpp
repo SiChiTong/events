@@ -21,7 +21,7 @@ public:
               unsigned short port);
     ~tcpserver();
     int fd() { return this->sockfd; }
-    int accept();
+    int accept(bool nonblocking = true);
 
     ssize_t write(int childfd, const std::string& msg);
     ssize_t read(int childfd, std::string& msg);

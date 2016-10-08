@@ -40,7 +40,7 @@ tcpserver::~tcpserver() {
 #endif
 }
 
-int tcpserver::accept() {
+int tcpserver::accept(bool nonblocking) {
     struct net::sockaddr_in clientaddr;
     net::socklen_t clientlen;
 
@@ -48,8 +48,10 @@ int tcpserver::accept() {
     if (childfd < 0) 
         throw exception("ERROR: accept");
 
-    int flags = fcntl(childfd, F_GETFL);
-    fcntl(childfd, F_SETFL, flags | O_NONBLOCK);
+    if (nonblocking) {
+        int flags = fcntl(childfd, F_GETFL);
+        fcntl(childfd, F_SETFL, flags | O_NONBLOCK);
+    }
     return childfd;
 }
 
