@@ -26,7 +26,9 @@ struct event_watcher {
     function<void(event_watcher<T>*)> callback;
     events* self;
     T watcher;
-    void stop();
+    
+    void stop();     /* Stop the watcher but does not release it */
+    void release();  /* Stop and release the watcher */
 };
 
 using event_signal_watcher = event_watcher<ev_signal>;
@@ -43,14 +45,14 @@ struct event_redis_watcher {
 class events {
 public:
     events();
-    shared_ptr<event_signal_watcher> onSignal(int signal,
-                                              function<void(event_signal_watcher*)> callback);
-    shared_ptr<event_timer_watcher> onTimer(ev_tstamp after,
-                                            ev_tstamp repeat,
-                                            function<void(event_timer_watcher*)> callback);
-    shared_ptr<event_io_watcher> onRead(int fd,
-                                        function<void(event_io_watcher*)> callback);
-    shared_ptr<event_async_watcher> onAsync(function<void(event_async_watcher*)> callback);
+    event_signal_watcher* onSignal(int signal,
+                                   function<void(event_signal_watcher*)> callback);
+    event_timer_watcher* onTimer(ev_tstamp after,
+                                 ev_tstamp repeat,
+                                 function<void(event_timer_watcher*)> callback);
+    event_io_watcher* onRead(int fd,
+                             function<void(event_io_watcher*)> callback);
+    event_async_watcher* onAsync(function<void(event_async_watcher*)> callback);
 
 #ifdef ASYNC_REDIS
     events(const string& redis_host, unsigned short redis_port);
@@ -72,7 +74,7 @@ public:
 
     void run();
     void stop();
-    void sendAsync(shared_ptr<event_async_watcher> watcher);
+    void sendAsync(event_async_watcher* watcher);
 
 private:
     friend event_signal_watcher;
@@ -93,13 +95,9 @@ private:
     static void callback(struct ev_loop* loop, EVENT_TYPE* event_handler, int event);
 
     template<class T>
-    shared_ptr<T> new_watcher(function<void(T*)> callback);
+    T* new_watcher(function<void(T*)> callback);
 
     struct ev_loop *loop = NULL;    
-    vector<shared_ptr<event_signal_watcher>> signal_watchers;
-    vector<shared_ptr<event_timer_watcher>> timer_watchers;
-    vector<shared_ptr<event_io_watcher>> io_watchers;
-    vector<shared_ptr<event_async_watcher>> async_watchers;
 
 #ifdef ASYNC_REDIS
     vector<event_redis_watcher*> redis_watchers;    
