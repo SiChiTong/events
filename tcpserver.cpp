@@ -1,9 +1,12 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+#include <stdexcept>
 #include "tcpserver.hpp"
 
 using std::string;
+using std::runtime_error;
+
 using namespace net;
 
 #define MAX_LISTENS 10
@@ -15,7 +18,7 @@ tcpserver::tcpserver(const std::string& host,
       port(port) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
-        throw exception("ERROR: opening socket");
+        throw runtime_error("ERROR: opening socket");
 
     int optval = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(int));
@@ -26,10 +29,10 @@ tcpserver::tcpserver(const std::string& host,
     serveraddr.sin_port = htons((unsigned short)port);
 
     if (bind(sockfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0)
-        throw exception("ERROR: binding socket");
+        throw runtime_error("ERROR: binding socket");
     
     if (listen(sockfd, MAX_LISTENS) < 0)
-        throw exception("ERROR: listening");
+        throw runtime_error("ERROR: listening");
 }
 
 tcpserver::~tcpserver() {
@@ -46,7 +49,7 @@ int tcpserver::accept(bool nonblocking) {
 
     int childfd = net::accept(this->sockfd, (struct sockaddr *) &clientaddr, &clientlen);
     if (childfd < 0) 
-        throw exception("ERROR: accept");
+        throw runtime_error("ERROR: accept(" + string(strerror(errno)) + ")");
 
     if (nonblocking) {
         int flags = fcntl(childfd, F_GETFL);
