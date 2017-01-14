@@ -7,8 +7,6 @@
 using std::string;
 using std::runtime_error;
 
-using namespace net;
-
 #define MAX_LISTENS 10
 #define MAX_MESSAGE_SIZE 1024
 
@@ -39,15 +37,18 @@ tcpserver::~tcpserver() {
 #ifdef __APPLE__
     ::close(this->sockfd);
 #else
-    net::close(this->sockfd);
+    close(this->sockfd);
 #endif
 }
 
 int tcpserver::accept(bool nonblocking) {
-    struct net::sockaddr_in clientaddr;
-    net::socklen_t clientlen;
-
-    int childfd = net::accept(this->sockfd, (struct sockaddr *) &clientaddr, &clientlen);
+    struct sockaddr_in clientaddr;
+    socklen_t clientlen;
+#ifdef __APPLE__
+    int childfd = ::accept(this->sockfd, (struct sockaddr *) &clientaddr, &clientlen);
+#else
+    int childfd = accept(this->sockfd, (struct sockaddr *) &clientaddr, &clientlen);
+#endif
     if (childfd < 0) 
         throw runtime_error("ERROR: accept(" + string(strerror(errno)) + ")");
 
@@ -62,7 +63,7 @@ ssize_t tcpserver::write(int childfd, const std::string& msg) {
 #ifdef __APPLE__
     return ::write(childfd, msg.c_str(), msg.length());
 #else
-    return net::write(childfd, msg.c_str(), msg.length());
+    return write(childfd, msg.c_str(), msg.length());
 #endif
 }
 
@@ -76,7 +77,7 @@ ssize_t tcpserver::read(int childfd, std::string& msg) {
 #ifdef __APPLE__
            ::read(childfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
 #else
-          net::read(childfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
+          read(childfd, raw_msg, MAX_MESSAGE_SIZE)) > 0
 #endif
         ) {
         retval += bytes_read;
@@ -89,7 +90,7 @@ void tcpserver::close() {
 #ifdef __APPLE__
     ::close(sockfd);
 #else
-    net::close(sockfd);
+    close(sockfd);
 #endif
 }
 

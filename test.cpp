@@ -1,5 +1,4 @@
 #include "events.hpp"
-#include "tcpclient.hpp"
 #include "tcpserver.hpp"
 
 int main() {
@@ -23,6 +22,12 @@ int main() {
 #else
         tcpserver server("127.0.0.1", 12345);
         events ev;
+        ev.onTimer(1, 1000, [](event_timer_watcher*) {
+                cout << "Sec elapsed..." << endl;
+            });
+        ev.onSignal(SIGINT, [](event_signal_watcher* watcher) {
+                watcher->self->stop();
+            });
         ev.onRead(server.fd(),
                   [&server](event_io_watcher*) {
                       server.accept();

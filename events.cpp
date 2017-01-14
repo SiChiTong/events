@@ -6,12 +6,12 @@
 extern "C" {
     #include <hiredis.h>
     #include <async.h>
-    #include <adapters/libev.h>
+    #include <adapters/libuv.h>
 }
 #endif
 
 events::events() {
-    this->loop = ev_loop_new(EVBACKEND_POLL | EVBACKEND_SELECT);
+    this->loop = uv_loop_new();
 }
 
 template<class T>
@@ -26,94 +26,95 @@ T* events::new_watcher(function<void(T*)> callback) {
 
 event_signal_watcher* events::onSignal(int signal, function<void(event_signal_watcher*)> callback) {
     auto e_spec = new_watcher<event_signal_watcher>(callback);
-    ev_signal_init(&e_spec->watcher, events::signal_callback, signal);
-    ev_signal_start(this->loop, &e_spec->watcher);
 
+    uv_signal_init(this->loop, &e_spec->watcher);
+    uv_signal_start(&e_spec->watcher, events::signal_callback, signal);
+    
     return e_spec;
 }
 
-event_timer_watcher* events::onTimer(ev_tstamp after, ev_tstamp repeat, function<void(event_timer_watcher*)> callback) {
+event_timer_watcher* events::onTimer(uint64_t timeout,
+                                     uint64_t repeat,
+                                     function<void(event_timer_watcher*)> callback) {
     auto e_spec = new_watcher<event_timer_watcher>(callback);
-    ev_timer_init(&e_spec->watcher, events::timer_callback, after, repeat);
-    ev_timer_start(this->loop, &e_spec->watcher);
-
+    
+    uv_timer_init(this->loop, &e_spec->watcher);
+    uv_timer_start(&e_spec->watcher, events::timer_callback, timeout, repeat);
+    
     return e_spec;
 }
 
-event_io_watcher* events::onRead(int fd, function<void(event_io_watcher*)> callback) {
+event_io_watcher* events::onRead(int fd,
+                                            function<void(event_io_watcher*)> callback) {
     auto e_spec = new_watcher<event_io_watcher>(callback);
-    ev_io_init(&e_spec->watcher, events::io_callback, fd, EV_READ);
-    ev_io_start(this->loop, &e_spec->watcher);
-
+    
+    uv_poll_init(this->loop, &e_spec->watcher, fd);
+    uv_poll_start(&e_spec->watcher, UV_READABLE | UV_DISCONNECT, events::poll_callback);
+    
     return e_spec;
 }
 
 event_async_watcher* events::onAsync(function<void(event_async_watcher*)> callback) {
     auto e_spec = new_watcher<event_async_watcher>(callback);
-    ev_async_init(&e_spec->watcher, events::async_callback);
-    ev_async_start(this->loop, &e_spec->watcher);
-
+    
+    uv_async_init(this->loop, &e_spec->watcher, events::async_callback);
+    
     return e_spec;
 }
 
 void events::run() {
     assert(this->loop);
-    ev_run(this->loop, 0);
+    uv_run(this->loop, UV_RUN_DEFAULT);
 }
 
 void events::stop() {
     assert(this->loop);
-    ev_break(this->loop, EVBREAK_ALL);
+    uv_stop(this->loop);
 }
 
-template<> void event_watcher<ev_signal>::stop() {
+template<> void event_watcher<uv_signal_t>::stop() {
     /* TODO event shall be removed from signal_watchers */
-    ev_signal_stop(this->self->loop, &this->watcher);
+    uv_signal_stop(&this->watcher);
 }
 
-template<> void event_watcher<ev_timer>::stop() {
+template<> void event_watcher<uv_timer_t>::stop() {
     /* TODO event shall be removed from timer_watchers */
-    ev_timer_stop(this->self->loop, &this->watcher);
+    uv_timer_stop(&this->watcher);
 }
 
-template<> void event_watcher<ev_io>::stop() {
-    ev_io_stop(this->self->loop, &this->watcher);
+template<> void event_watcher<uv_poll_t>::stop() {
+    uv_poll_stop(&this->watcher);
 }
 
-template<> void event_watcher<ev_io>::release() {
+template<> void event_watcher<uv_poll_t>::release() {
     this->stop();
     delete this;
 }
 
-template<> void event_watcher<ev_async>::stop() {
-    /* TODO event shall be removed from async_watchers */
-    ev_async_stop(this->self->loop, &this->watcher);
-}
-
 void events::sendAsync(event_async_watcher* event) {
-    ev_async_send(this->loop, &event->watcher);
+    uv_async_send(&event->watcher);
 }
 
-void events::signal_callback(struct ev_loop* loop, ev_signal* signal, int event) {
+void events::signal_callback(uv_signal_t* signal, int event) {
     auto e_spec = static_cast<event_signal_watcher*>(signal->data);
     auto callback = static_cast <function<void(event_signal_watcher*)>> (e_spec->callback);
     callback(e_spec);
 }
 
-void events::timer_callback(struct ev_loop* loop, ev_timer *timer, int event) {
+void events::timer_callback(uv_timer_t* timer) {
     auto e_spec = static_cast<event_timer_watcher*>(timer->data);
     auto callback = static_cast <function<void(event_timer_watcher*)>> (e_spec->callback);
     callback(e_spec);
 }
 
-void events::io_callback(struct ev_loop* loop, ev_io *io, int event) {
-    auto e_spec = static_cast<event_io_watcher*>(io->data);
+void events::poll_callback(uv_poll_t* handle, int status, int events) {
+    auto e_spec = static_cast<event_io_watcher*>(handle->data);
     auto callback = static_cast <function<void(event_io_watcher*)>> (e_spec->callback);
     callback(e_spec);
 }
 
-void events::async_callback(struct ev_loop* loop, ev_async *async, int event) {
-    auto e_spec = static_cast<event_async_watcher*>(async->data);
+void events::async_callback(uv_async_t* handle) {
+    auto e_spec = static_cast<event_async_watcher*>(handle->data);
     auto callback = static_cast <function<void(event_async_watcher*)>> (e_spec->callback);
     callback(e_spec);
 }
@@ -125,9 +126,9 @@ events::events(const string& redis_host, unsigned short redis_port) {
     if (this->redis->err || this->redis_pubsub->err) {
         throw string("Redis Async cannot connect.");
     }
-    this->loop = ev_loop_new(EVBACKEND_POLL | EVBACKEND_SELECT);
-    redisLibevAttach(this->loop, this->redis);
-    redisLibevAttach(this->loop, this->redis_pubsub);
+    this->loop = uv_loop_new();
+    redisLibuvAttach(this->redis, this->loop);
+    redisLibuvAttach(this->redis_pubsub, this->loop);
 }
 
 void events::redis_read_callback(redisAsyncContext *context, void *reply, void *data) {

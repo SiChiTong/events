@@ -10,7 +10,7 @@
 #endif
 extern "C" {
 #include <unistd.h>
-#include <ev.h>
+#include <uv.h>
 }
 
 using namespace std;
@@ -31,10 +31,10 @@ struct event_watcher {
     void release();  /* Stop and release the watcher */
 };
 
-using event_signal_watcher = event_watcher<ev_signal>;
-using event_timer_watcher = event_watcher<ev_timer>;
-using event_io_watcher = event_watcher<ev_io>;
-using event_async_watcher = event_watcher<ev_async>;
+using event_signal_watcher = event_watcher<uv_signal_t>;
+using event_timer_watcher = event_watcher<uv_timer_t>;
+using event_io_watcher = event_watcher<uv_poll_t>;
+using event_async_watcher = event_watcher<uv_async_t>;
 #ifdef ASYNC_REDIS
 struct event_redis_watcher {
     redisAsyncContext* context;
@@ -45,10 +45,11 @@ struct event_redis_watcher {
 class events {
 public:
     events();
+
     event_signal_watcher* onSignal(int signal,
                                    function<void(event_signal_watcher*)> callback);
-    event_timer_watcher* onTimer(ev_tstamp after,
-                                 ev_tstamp repeat,
+    event_timer_watcher* onTimer(uint64_t timeout,
+                                 uint64_t repeat,
                                  function<void(event_timer_watcher*)> callback);
     event_io_watcher* onRead(int fd,
                              function<void(event_io_watcher*)> callback);
@@ -74,7 +75,7 @@ public:
 
     void run();
     void stop();
-    void sendAsync(event_async_watcher* watcher);
+    void sendAsync(event_async_watcher* event);
 
 private:
     friend event_signal_watcher;
@@ -82,22 +83,22 @@ private:
     friend event_io_watcher;
     friend event_async_watcher;
 
-    static void signal_callback(struct ev_loop* loop, ev_signal* signal, int event);
-    static void timer_callback(struct ev_loop* loop, ev_timer* timer, int event);
-    static void io_callback(struct ev_loop* loop,ev_io* io, int event);
-    static void async_callback(struct ev_loop* loop, ev_async* async, int event);
+    static void signal_callback(uv_signal_t* signal, int event);
+    static void timer_callback(uv_timer_t* timer);
+    static void poll_callback(uv_poll_t* handle, int status, int events);
+    static void async_callback(uv_async_t* handle);
 
 #ifdef ASYNC_REDIS
     static void redis_read_callback(redisAsyncContext *context, void *reply, void *data);
     static void redis_subscribe_callback(redisAsyncContext *context, void *reply, void *data);
 #endif
     template<class EVENT_TYPE, class EVENT_WATCHER>
-    static void callback(struct ev_loop* loop, EVENT_TYPE* event_handler, int event);
+    static void callback(struct uv_loop* loop, EVENT_TYPE* event_handler, int event);
 
     template<class T>
     T* new_watcher(function<void(T*)> callback);
 
-    struct ev_loop *loop = NULL;    
+    uv_loop_t *loop = NULL;    
 
 #ifdef ASYNC_REDIS
     vector<event_redis_watcher*> redis_watchers;    

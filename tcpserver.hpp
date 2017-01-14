@@ -1,15 +1,13 @@
 #pragma once
 
-namespace net {
-    extern "C" {
-        #include <sys/types.h>
-        #include <sys/socket.h>
-        #include <netinet/in.h>
-        #include <arpa/inet.h>
-        #include <netdb.h>
-        #include <unistd.h>
-        #include <fcntl.h>
-    }
+extern "C" {
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <fcntl.h>
 }
 #include <string>
 
@@ -42,6 +40,6 @@ private:
     unsigned short port;
 
     int sockfd;
-    struct net::sockaddr_in serveraddr;
-    struct net::hostent *server;
+    struct sockaddr_in serveraddr;
+    struct hostent *server;
 };
