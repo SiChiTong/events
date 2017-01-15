@@ -31,10 +31,22 @@ struct event_watcher {
     void release();  /* Stop and release the watcher */
 };
 
+typedef uv_stream_t event_stream;
+struct event_tcp_watcher : event_watcher<uv_tcp_t> {
+    function<void(event_tcp_watcher*)> callback;
+    event_stream* accept();
+};
+struct event_stream_watcher : event_watcher<uv_stream_t> {
+    function<void(event_stream_watcher*)> callback;
+    ssize_t nread;
+    const uv_buf_t* buffer;
+};
 using event_signal_watcher = event_watcher<uv_signal_t>;
 using event_timer_watcher = event_watcher<uv_timer_t>;
 using event_io_watcher = event_watcher<uv_poll_t>;
 using event_async_watcher = event_watcher<uv_async_t>;
+using event_connect_watcher = event_watcher<uv_connect_t>;
+
 #ifdef ASYNC_REDIS
 struct event_redis_watcher {
     redisAsyncContext* context;
@@ -54,6 +66,15 @@ public:
     event_io_watcher* onRead(int fd,
                              function<void(event_io_watcher*)> callback);
     event_async_watcher* onAsync(function<void(event_async_watcher*)> callback);
+
+    event_tcp_watcher* onListen(const std::string& iface_addr,
+                                unsigned short port,
+                                function<void(event_tcp_watcher*)> callback);
+    int onRead(event_stream* stream,
+               function<void(event_stream_watcher*)> callback);
+    int onConnect(const std::string& addr,
+                  unsigned short port,
+                  function<void(event_connect_watcher*)> callback);
 
 #ifdef ASYNC_REDIS
     events(const string& redis_host, unsigned short redis_port);
@@ -82,11 +103,15 @@ private:
     friend event_timer_watcher;
     friend event_io_watcher;
     friend event_async_watcher;
+    friend event_tcp_watcher;
 
     static void signal_callback(uv_signal_t* signal, int event);
     static void timer_callback(uv_timer_t* timer);
     static void poll_callback(uv_poll_t* handle, int status, int events);
     static void async_callback(uv_async_t* handle);
+    static void listen_callback(uv_stream_t* server, int status);
+    static void read_stream_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buffer);
+    static void connect_callback(uv_connect_t* request, int status);
 
 #ifdef ASYNC_REDIS
     static void redis_read_callback(redisAsyncContext *context, void *reply, void *data);
