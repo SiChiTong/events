@@ -78,6 +78,8 @@ event_tcp_watcher* events::onListen(const std::string& iface_addr,
     struct sockaddr_in addr;
 
     uv_tcp_init(this->loop, &e_spec->watcher);
+    uv_tcp_nodelay(&e_spec->watcher, false);
+    
     uv_ip4_addr(iface_addr.c_str(), port, &addr);
     uv_tcp_bind(&e_spec->watcher, (const struct sockaddr*)&addr, 0);
 
@@ -101,6 +103,25 @@ int events::onRead(event_stream* stream,
     return uv_read_start(stream, alloc_buffer, events::read_stream_callback);
 }
 
+void write_cb(uv_write_t *req, int status) {
+    cout << "written" << endl;
+    delete req;
+    if (status == -1) {
+        fprintf(stderr, "error on_write_end");
+        return;
+    }
+}
+int events::onWrite(uv_stream_t* tcp, char* msg, size_t bytes) {
+    static char buffer[100];
+    
+    uv_buf_t buf = uv_buf_init(buffer, sizeof(buffer));
+    buf.len = bytes;
+    buf.base = msg;
+    
+    uv_write_t* write_req = new uv_write_t;
+    return uv_write(write_req, tcp, &buf, 1, write_cb);
+}
+
 int events::onConnect(const std::string& addr,
                       unsigned short port,
                       function<void(event_connect_watcher*)> callback) {
@@ -108,8 +129,9 @@ int events::onConnect(const std::string& addr,
 
     uv_tcp_t* socket = (uv_tcp_t*) malloc(sizeof(uv_tcp_t));
     uv_tcp_init(this->loop, socket);
+    uv_tcp_nodelay(socket, false);
 
-    uv_connect_t* connect = (uv_connect_t*)malloc(sizeof(uv_connect_t));
+    uv_connect_t* connect = new uv_connect_t;
     connect->data = e_spec;
     
     struct sockaddr_in dest;
@@ -191,6 +213,7 @@ void events::read_stream_callback(uv_stream_t* stream, ssize_t nread, const uv_b
 
 void events::connect_callback(uv_connect_t* request, int status) {
     auto e_spec = static_cast<event_connect_watcher*>(request->data);
+    e_spec->watcher_ptr = request; /* TODO Fix */
     auto callback = static_cast <function<void(event_connect_watcher*)>> (e_spec->callback);
     callback(e_spec);
 }

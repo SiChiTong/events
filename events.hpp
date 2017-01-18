@@ -26,6 +26,7 @@ struct event_watcher {
     function<void(event_watcher<T>*)> callback;
     events* self;
     T watcher;
+    T* watcher_ptr;
     
     void stop();     /* Stop the watcher but does not release it */
     void release();  /* Stop and release the watcher */
@@ -72,6 +73,7 @@ public:
                                 function<void(event_tcp_watcher*)> callback);
     int onRead(event_stream* stream,
                function<void(event_stream_watcher*)> callback);
+    int onWrite(uv_stream_t* tcp, char* buf, size_t bytes);
     int onConnect(const std::string& addr,
                   unsigned short port,
                   function<void(event_connect_watcher*)> callback);
