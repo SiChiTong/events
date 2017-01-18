@@ -25,9 +25,10 @@ template<class T>
 struct event_watcher {
     function<void(event_watcher<T>*)> callback;
     events* self;
-    T watcher;
-    T* watcher_ptr;
-    
+    union {
+        T watcher;
+        T* watcher_ptr;
+    };
     void stop();     /* Stop the watcher but does not release it */
     void release();  /* Stop and release the watcher */
 };
@@ -47,6 +48,7 @@ using event_timer_watcher = event_watcher<uv_timer_t>;
 using event_io_watcher = event_watcher<uv_poll_t>;
 using event_async_watcher = event_watcher<uv_async_t>;
 using event_connect_watcher = event_watcher<uv_connect_t>;
+using event_write_watcher = event_watcher<uv_write_t>;
 
 #ifdef ASYNC_REDIS
 struct event_redis_watcher {
@@ -73,7 +75,10 @@ public:
                                 function<void(event_tcp_watcher*)> callback);
     int onRead(event_stream* stream,
                function<void(event_stream_watcher*)> callback);
-    int onWrite(uv_stream_t* tcp, char* buf, size_t bytes);
+    int onWrite(uv_stream_t* tcp,
+                const char* buf,
+                size_t bytes,
+                function<void(event_write_watcher*)> callback);
     int onConnect(const std::string& addr,
                   unsigned short port,
                   function<void(event_connect_watcher*)> callback);
@@ -114,6 +119,7 @@ private:
     static void listen_callback(uv_stream_t* server, int status);
     static void read_stream_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buffer);
     static void connect_callback(uv_connect_t* request, int status);
+    static void write_callback(uv_write_t* request, int status);
 
 #ifdef ASYNC_REDIS
     static void redis_read_callback(redisAsyncContext *context, void *reply, void *data);

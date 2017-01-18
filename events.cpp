@@ -103,23 +103,20 @@ int events::onRead(event_stream* stream,
     return uv_read_start(stream, alloc_buffer, events::read_stream_callback);
 }
 
-void write_cb(uv_write_t *req, int status) {
-    cout << "written" << endl;
-    delete req;
-    if (status == -1) {
-        fprintf(stderr, "error on_write_end");
-        return;
-    }
-}
-int events::onWrite(uv_stream_t* tcp, char* msg, size_t bytes) {
-    static char buffer[100];
+int events::onWrite(uv_stream_t* tcp,
+                    const char* msg,
+                    size_t bytes,
+                    function<void(event_write_watcher*)> callback) {
+    static char buffer[128];
     
     uv_buf_t buf = uv_buf_init(buffer, sizeof(buffer));
     buf.len = bytes;
-    buf.base = msg;
-    
+    buf.base = const_cast<char*>(msg);
+
+    auto e_spec = new_watcher<event_write_watcher>(callback);
     uv_write_t* write_req = new uv_write_t;
-    return uv_write(write_req, tcp, &buf, 1, write_cb);
+    write_req->data = e_spec;
+    return uv_write(write_req, tcp, &buf, 1, events::write_callback);
 }
 
 int events::onConnect(const std::string& addr,
@@ -216,6 +213,17 @@ void events::connect_callback(uv_connect_t* request, int status) {
     e_spec->watcher_ptr = request; /* TODO Fix */
     auto callback = static_cast <function<void(event_connect_watcher*)>> (e_spec->callback);
     callback(e_spec);
+}
+
+void events::write_callback(uv_write_t* request, int status) {
+    auto e_spec = static_cast<event_write_watcher*>(request->data);
+    auto callback = static_cast <function<void(event_write_watcher*)>> (e_spec->callback);
+    
+    if (status == -1) {
+        callback(nullptr);
+    } else {
+        callback(e_spec);
+    }
 }
 
 #ifdef ASYNC_REDIS

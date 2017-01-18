@@ -12,7 +12,7 @@ else
 CPPFLAGS = -std=c++11 -ggdb -O0 -I/usr/local/include -fPIC -pthread
 LDFLAGS = -L. -L/usr/local/lib -luv -pthread
 endif
-SOURCES	= events.cpp tcpclient.cpp tcpserver.cpp
+SOURCES	= events.cpp
 OBJECTS	= $(foreach x, $(basename $(SOURCES)), $(x).o)
 
 TARGET = libevents.so

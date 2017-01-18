@@ -1,6 +1,4 @@
-
 #include "events.hpp"
-#include "tcpserver.hpp"
 
 int main() {
     try {
@@ -38,7 +36,11 @@ int main() {
                 /* TODO check memory leaks */
                 cout << "Connected" << endl;
                 ev.onTimer(1, 2000, [&ev, watcher](event_timer_watcher*) {
-                        ev.onWrite(watcher->watcher_ptr->handle, "hello", 5);
+                        ev.onWrite(watcher->watcher_ptr->handle,
+                                   "hello",
+                                   5, [](event_write_watcher* write) {
+                                       // left blank
+                                   });
                     });
             });
         ev.onTimer(1, 1000, [](event_timer_watcher*) {
