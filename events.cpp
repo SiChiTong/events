@@ -99,6 +99,7 @@ static void alloc_buffer(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
 int events::onRead(event_stream* stream,
                    function<void(event_stream_watcher*)> callback) {
     auto e_spec = new_watcher<event_stream_watcher>(callback);
+    e_spec->handle = stream;
     stream->data = e_spec;
     return uv_read_start(stream, alloc_buffer, events::read_stream_callback);
 }

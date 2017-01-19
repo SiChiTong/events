@@ -23,11 +23,12 @@ int main() {
         ev.onListen("127.0.0.1", 12345, [&ev](event_tcp_watcher* server) {
                 event_stream* client = server->accept();
                 cout << "Connection" << endl;
-                ev.onRead(client, [](event_stream_watcher* stream) {
+                ev.onRead(client, [&ev, &client](event_stream_watcher* stream) {
                         cout << "Reading" << endl;
-                        if (stream->nread > 0)
+                        if (stream->nread > 0) {
+                            ev.write(stream->handle, "bye", 5);
                             cout << stream->buffer->base << endl;
-                        else
+                        } else
                             cout << "Disconnected" << endl;
                     });
             });
@@ -35,6 +36,9 @@ int main() {
                 cout << "Connected" << endl;
                 ev.onTimer(1, 2000, [&ev, watcher](event_timer_watcher*) {
                         ev.write(watcher->handle, "hello", 5);
+                        ev.onRead(watcher->handle, [](event_stream_watcher* stream) {
+                                cout << stream->buffer->base << endl;
+                            });
                     });
             });
         ev.onTimer(1, 1000, [](event_timer_watcher*) {
