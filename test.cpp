@@ -32,15 +32,9 @@ int main() {
                     });
             });
         ev.onConnect("127.0.0.1", 12345, [&ev](event_connect_watcher* watcher) {
-                /* TODO how to close the connection */
-                /* TODO check memory leaks */
                 cout << "Connected" << endl;
                 ev.onTimer(1, 2000, [&ev, watcher](event_timer_watcher*) {
-                        ev.onWrite(watcher->watcher_ptr->handle,
-                                   "hello",
-                                   5, [](event_write_watcher* write) {
-                                       // left blank
-                                   });
+                        ev.write(watcher->handle, "hello", 5);
                     });
             });
         ev.onTimer(1, 1000, [](event_timer_watcher*) {

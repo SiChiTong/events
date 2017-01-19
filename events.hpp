@@ -43,11 +43,14 @@ struct event_stream_watcher : event_watcher<uv_stream_t> {
     ssize_t nread;
     const uv_buf_t* buffer;
 };
+struct event_connect_watcher : event_watcher<uv_connect_t> {
+    function<void(event_connect_watcher*)> callback;
+    uv_stream_t* handle;
+};
 using event_signal_watcher = event_watcher<uv_signal_t>;
 using event_timer_watcher = event_watcher<uv_timer_t>;
 using event_io_watcher = event_watcher<uv_poll_t>;
 using event_async_watcher = event_watcher<uv_async_t>;
-using event_connect_watcher = event_watcher<uv_connect_t>;
 using event_write_watcher = event_watcher<uv_write_t>;
 
 #ifdef ASYNC_REDIS
@@ -69,16 +72,13 @@ public:
     event_io_watcher* onRead(int fd,
                              function<void(event_io_watcher*)> callback);
     event_async_watcher* onAsync(function<void(event_async_watcher*)> callback);
-
+    
     event_tcp_watcher* onListen(const std::string& iface_addr,
                                 unsigned short port,
                                 function<void(event_tcp_watcher*)> callback);
+    int write(uv_stream_t* tcp, const char* buf, size_t bytes);
     int onRead(event_stream* stream,
                function<void(event_stream_watcher*)> callback);
-    int onWrite(uv_stream_t* tcp,
-                const char* buf,
-                size_t bytes,
-                function<void(event_write_watcher*)> callback);
     int onConnect(const std::string& addr,
                   unsigned short port,
                   function<void(event_connect_watcher*)> callback);

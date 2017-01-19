@@ -103,19 +103,14 @@ int events::onRead(event_stream* stream,
     return uv_read_start(stream, alloc_buffer, events::read_stream_callback);
 }
 
-int events::onWrite(uv_stream_t* tcp,
-                    const char* msg,
-                    size_t bytes,
-                    function<void(event_write_watcher*)> callback) {
+int events::write(uv_stream_t* tcp, const char* msg, size_t bytes) {
     static char buffer[128];
     
     uv_buf_t buf = uv_buf_init(buffer, sizeof(buffer));
     buf.len = bytes;
     buf.base = const_cast<char*>(msg);
 
-    auto e_spec = new_watcher<event_write_watcher>(callback);
     uv_write_t* write_req = new uv_write_t;
-    write_req->data = e_spec;
     return uv_write(write_req, tcp, &buf, 1, events::write_callback);
 }
 
@@ -210,19 +205,16 @@ void events::read_stream_callback(uv_stream_t* stream, ssize_t nread, const uv_b
 
 void events::connect_callback(uv_connect_t* request, int status) {
     auto e_spec = static_cast<event_connect_watcher*>(request->data);
-    e_spec->watcher_ptr = request; /* TODO Fix */
+    e_spec->handle = request->handle;
     auto callback = static_cast <function<void(event_connect_watcher*)>> (e_spec->callback);
     callback(e_spec);
 }
 
 void events::write_callback(uv_write_t* request, int status) {
-    auto e_spec = static_cast<event_write_watcher*>(request->data);
-    auto callback = static_cast <function<void(event_write_watcher*)>> (e_spec->callback);
-    
+    delete request;
+    /* TODO delete request buffer? */
     if (status == -1) {
-        callback(nullptr);
-    } else {
-        callback(e_spec);
+        throw std::runtime_error(__FUNCTION__);
     }
 }
 
