@@ -77,7 +77,7 @@ public:
     event_tcp_watcher* onListen(const std::string& iface_addr,
                                 unsigned short port,
                                 function<void(event_tcp_watcher*)> callback);
-    int write(uv_stream_t* tcp, const char* buf, size_t bytes);
+    static int write(uv_stream_t* tcp, const char* buf, size_t bytes);
     int onRead(event_stream* stream,
                function<void(event_stream_watcher*)> callback);
     int onConnect(const std::string& addr,
