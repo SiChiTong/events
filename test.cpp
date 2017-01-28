@@ -44,6 +44,10 @@ int main() {
         ev.onTimer(1, 1000, [](event_timer_watcher*) {
                 cout << "Sec elapsed..." << endl;
             });
+        ev.onTimer(1, 2000, [](event_timer_watcher*) {
+                cout << "2Sec elapsed..." << endl;
+            });
+
         ev.onSignal(SIGINT, [](event_signal_watcher* watcher) {
                 watcher->self->stop();
             });

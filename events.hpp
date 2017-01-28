@@ -43,6 +43,7 @@ struct event_stream_watcher : event_watcher<uv_stream_t> {
     ssize_t nread;
     const uv_buf_t* buffer;
     uv_stream_t* handle;
+    void stop() { uv_read_stop(handle); }
 };
 struct event_connect_watcher : event_watcher<uv_connect_t> {
     function<void(event_connect_watcher*)> callback;
